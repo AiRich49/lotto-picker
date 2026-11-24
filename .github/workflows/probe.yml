@@ -1,0 +1,28 @@
+name: Probe results sources
+on:
+  push:
+    paths: ['.github/workflows/probe.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch sample pages
+        run: |
+          mkdir -p probe
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
+          for g in lotto thunderball euromillions set-for-life; do
+            curl -sSL -A "$UA" -o probe/nl-$g.csv -w "nl-$g %{http_code} %{size_download}\n" "https://www.national-lottery.co.uk/results/$g/draw-history/csv" >> probe/status.txt 2>&1 || echo "nl-$g failed" >> probe/status.txt
+            curl -sSL -A "$UA" -o probe/lc-$g.html -w "lc-$g %{http_code} %{size_download}\n" "https://www.lottery.co.uk/$g/results/archive-2026" >> probe/status.txt 2>&1 || echo "lc-$g failed" >> probe/status.txt
+          done
+          head -c 3000 probe/nl-lotto.csv > probe/nl-lotto.head.txt || true
+      - name: Save
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add probe
+          git commit -m "Probe results sources" || exit 0
+          git push
