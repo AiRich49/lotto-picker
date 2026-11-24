@@ -80,6 +80,12 @@
   .mini { width: 26px; height: 26px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 12px; font-weight: 700; background: #efece5; color: var(--ink); }
   .mini.x { background: #e6d8f3; color: var(--extra); }
   .sep { font-size: 12px; margin: 0 4px 0 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .chip { border-radius: 999px; padding: 6px 12px; background: #fbe9e4; font-size: 14px; font-weight: 700; color: var(--ink); white-space: nowrap; }
+  .chip span { font-weight: 500; color: var(--muted); margin-left: 4px; }
+  .ball.combo { box-shadow: 0 0 0 3px #f6c9bd; }
+  .combo-note { width: 100%; font-size: 13px; color: var(--muted); margin: 2px 0 0 64px; }
+  @media (max-width: 520px) { .combo-note { margin-left: 0; } }
   [hidden] { display: none !important; }
   @media (max-width: 520px) {
     .tabs button { font-size: 15px; padding: 9px 14px; }
@@ -116,6 +122,12 @@
         </label>
         <p class="hint" id="extraHint"></p>
       </div>
+      <div>
+        <label class="inline">Start each line with
+          <select id="comboMode"><option value="0">No combination</option><option value="2">A most common pair</option><option value="3">A most common triple</option></select>
+        </label>
+        <p class="hint" id="comboHint"></p>
+      </div>
       <label class="inline">Lines to pick
         <select id="lines"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select>
       </label>
@@ -142,7 +154,12 @@
     </div>
   </section>
 
-  <p class="note"><strong>A fair warning:</strong> every ball has the same chance in every draw, so sticking to the most-drawn numbers doesn't improve your odds. The differences in the counts are ordinary random variation. It's a fun way to choose, not a system. Please play responsibly.</p>
+  <section class="card">
+    <h2>Most common combinations</h2>
+    <div id="combos"></div>
+  </section>
+
+  <p class="note"><strong>A fair warning:</strong> every ball has the same chance in every draw, so sticking to the most-drawn numbers or combinations doesn't improve your odds. The differences in the counts are ordinary random variation. It's a fun way to choose, not a system. Please play responsibly.</p>
   <p class="note" id="sourceNote"></p>
 </main>
 
@@ -199,6 +216,21 @@
     for (let i = 0; i < k; i++) out.push(p.splice(Math.floor(rand() * p.length), 1)[0]);
     return out.sort((a, b) => a - b);
   }
+  let SETS = {}, COMBO_CACHE = {};
+  function combos(k) {
+    const id = game + k;
+    if (COMBO_CACHE[id]) return COMBO_CACHE[id];
+    const m = new Map();
+    const add = (arr, start, chosen) => {
+      if (chosen.length === k) { const key = chosen.join("-"); m.set(key, (m.get(key) || 0) + 1); return; }
+      for (let i = start; i < arr.length; i++) add(arr, i + 1, chosen.concat(arr[i]));
+    };
+    SETS[game].forEach(s => add(s.main, 0, []));
+    const out = [...m.entries()].map(([key, c]) => ({ nums: key.split("-").map(Number), c }))
+      .sort((a, b) => b.c - a.c || a.nums[0] - b.nums[0] || a.nums[1] - b.nums[1] || (a.nums[2] || 0) - (b.nums[2] || 0));
+    return (COMBO_CACHE[id] = out);
+  }
+  const COMBO_TOP = 10;
   function fillSelect(sel, options, def) {
     sel.innerHTML = options.map(o => `<option${o === def ? " selected" : ""}>${o}</option>`).join("");
   }
@@ -212,19 +244,34 @@
 
   function generate() {
     const g = GAMES[game], mp = topN(g.main.key, +$("mainPool").value), xp = g.extra ? topN(g.extra.key, +$("extraPool").value) : null;
-    lastLines = Array.from({ length: +$("lines").value }, () => ({ main: pickFrom(mp, g.main.pick), extra: xp ? pickFrom(xp, g.extra.pick) : [] }));
+    const k = +$("comboMode").value, top = k ? combos(k).slice(0, COMBO_TOP) : null;
+    lastLines = Array.from({ length: +$("lines").value }, () => {
+      let main, combo = null;
+      if (top) {
+        combo = top[Math.floor(rand() * top.length)];
+        let pool = mp.filter(r => !combo.nums.includes(r.n)), extraN = mp.length;
+        while (pool.length < g.main.pick - k) { extraN++; pool = topN(g.main.key, extraN).filter(r => !combo.nums.includes(r.n)); }
+        main = combo.nums.concat(pickFrom(pool, g.main.pick - k)).sort((a, b) => a - b);
+      } else main = pickFrom(mp, g.main.pick);
+      return { main, combo, extra: xp ? pickFrom(xp, g.extra.pick) : [] };
+    });
     const box = $("results"); box.innerHTML = "";
     lastLines.forEach((line, li) => {
       const row = document.createElement("div"); row.className = "line";
       row.innerHTML = `<span class="line-label">Line ${li + 1}</span>`;
       line.main.forEach((n, bi) => {
-        const b = document.createElement("span"); b.className = "ball";
+        const b = document.createElement("span"); b.className = "ball" + (line.combo && line.combo.nums.includes(n) ? " combo" : "");
         b.style.animationDelay = (li * 0.08 + bi * 0.05) + "s"; b.textContent = n; row.appendChild(b);
       });
       line.extra.forEach((n, xi) => {
         const b = document.createElement("span"); b.className = "ball x" + (xi === 0 ? " first" : ""); b.title = g.extra.name;
         b.style.animationDelay = (li * 0.08 + 0.3 + xi * 0.05) + "s"; b.textContent = n; row.appendChild(b);
       });
+      if (line.combo) {
+        const note = document.createElement("p"); note.className = "combo-note";
+        note.textContent = `Includes ${line.combo.nums.join(" + ")}, drawn together ${line.combo.c} times`;
+        row.appendChild(note);
+      }
       box.appendChild(row);
     });
     $("resultActions").hidden = false; $("copied").textContent = "";
@@ -252,6 +299,7 @@
     showLatest();
     $("mainLabel").textContent = g.main.label; fillSelect($("mainPool"), g.main.options, g.main.def);
     $("extraBlock").hidden = !g.extra;
+    $("comboMode").value = "0";
     if (g.extra) { $("extraLabel").textContent = g.extra.label; fillSelect($("extraPool"), g.extra.options, g.extra.def); }
     clearResults(); render();
   }
@@ -266,6 +314,33 @@
       html += section(g.extra.key, g.extra.title, xp, g.extra.key === "emstar" ? 4 : 3);
     }
     $("freq").innerHTML = html;
+    renderCombos();
+  }
+  function chipList(list) {
+    return `<div class="chips">` + list.map(x => `<span class="chip">${x.nums.join(" + ")}<span>${x.c}×</span></span>`).join("") + `</div>`;
+  }
+  function tieNote(all, shown) {
+    const lastC = shown[shown.length - 1].c, more = all.filter(x => x.c === lastC).length - shown.filter(x => x.c === lastC).length;
+    return more > 0 ? `<p class="meta">${more.toLocaleString()} more also came up ${lastC} times.</p>` : "";
+  }
+  function renderCombos() {
+    const g = GAMES[game], n = SETS[game].length, unit = game === "lotto" ? "sets of numbers" : "draws";
+    const k = +$("comboMode").value;
+    $("comboHint").innerHTML = k ? `Each line starts with one of the top ${COMBO_TOP} ${k === 2 ? "pairs" : "triples"} below, then the rest come from your most-drawn numbers.` : "";
+    const p = combos(2), t = combos(3), ps = p.slice(0, COMBO_TOP), ts = t.slice(0, COMBO_TOP);
+    // full-line repeats
+    const full = new Map(), fullX = new Map();
+    SETS[game].forEach(s => { const a = s.main.join("-"), b = a + "|" + s.extra.join("-"); full.set(a, (full.get(a) || 0) + 1); fullX.set(b, (fullX.get(b) || 0) + 1); });
+    const rep = [...full.entries()].filter(([, c]) => c > 1), repX = [...fullX.values()].filter(c => c > 1).length;
+    let fullTxt;
+    if (!rep.length) fullTxt = `<strong>No full line has ever been drawn twice</strong> in these ${n.toLocaleString()} ${unit}, so every winning line has been different. That's why the most common combinations are pairs and triples.`;
+    else fullTxt = `<strong>${rep.length} set${rep.length > 1 ? "s" : ""} of main numbers ${rep.length > 1 ? "have" : "has"} come up more than once</strong> in these ${n.toLocaleString()} ${unit}` +
+      (g.extra ? (repX ? `, ${repX} of them with the same ${g.extra.name} too` : `, but never with the same ${g.extra.name}`) : "") + `: ` +
+      rep.map(([key]) => key.split("-").join(" ")).slice(0, 12).join(" · ") + `. Below are the most common pairs and triples.`;
+    $("combos").innerHTML = `<p class="meta" style="color:var(--ink)">${fullTxt}</p>` +
+      `<h3>Most common pairs</h3><p class="meta">Two main numbers drawn in the same line</p>` + chipList(ps) + tieNote(p, ps) +
+      `<h3>Most common triples</h3><p class="meta">Three main numbers drawn in the same line</p>` + chipList(ts) + tieNote(t, ts) +
+      (game === "lotto" ? `<p class="meta">Since June 2026, Round 1 and Round 2 each count as their own line.</p>` : "");
   }
 
   function fmtDate(s) {
@@ -300,6 +375,14 @@
       sfmain: { draws: sfr.length, max: 47, counts: counts(sfr, [1, 2, 3, 4, 5], 47) },
       sflife: { draws: sfr.length, max: 10, counts: counts(sfr, [6], 10) }
     };
+    const ints = a => a.map(Number).sort((x, y) => x - y);
+    SETS = {
+      lotto: lot.map(r => ({ main: ints(r.slice(2, 8)), extra: [] })),
+      thunderball: tbr.map(r => ({ main: ints(r.slice(1, 6)), extra: [+r[6]] })),
+      euromillions: emr.map(r => ({ main: ints(r.slice(1, 6)), extra: ints(r.slice(6, 8)) })),
+      setforlife: sfr.map(r => ({ main: ints(r.slice(1, 6)), extra: [+r[6]] }))
+    };
+    COMBO_CACHE = {};
     const last = (arr, f) => { const d = arr.reduce((m, r) => r[0] > m ? r[0] : m, ""); return { date: d, sets: arr.filter(r => r[0] === d).map(f) }; };
     LATEST = {
       lotto: last(lot, r => ({ main: r.slice(2, 8), extra: [] })),
@@ -316,11 +399,11 @@
     try { localStorage.setItem("picker-game", game); } catch (e) {}
     setupGame();
   });
-  $("mainPool").onchange = render; $("extraPool").onchange = render;
+  $("mainPool").onchange = render; $("extraPool").onchange = render; $("comboMode").onchange = renderCombos;
   $("go").onclick = generate;
   $("copy").onclick = async () => {
     const g = GAMES[game];
-    const text = g.name + "\n" + lastLines.map((l, i) => `Line ${i + 1}: ${l.main.join(", ")}` + (l.extra.length ? `  ${g.extra.name}: ${l.extra.join(", ")}` : "")).join("\n");
+    const text = g.name + "\n" + lastLines.map((l, i) => `Line ${i + 1}: ${l.main.join(", ")}` + (l.combo ? ` (includes ${l.combo.nums.join(" + ")})` : "") + (l.extra.length ? `  ${g.extra.name}: ${l.extra.join(", ")}` : "")).join("\n");
     try { await navigator.clipboard.writeText(text); $("copied").textContent = "Copied!"; }
     catch (e) { $("copied").textContent = "Couldn't copy here. Select the numbers above instead."; }
   };
