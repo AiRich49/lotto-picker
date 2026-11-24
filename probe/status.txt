@@ -1,0 +1,8 @@
+nl-lotto 200 2470
+lc-lotto 200 178106
+nl-thunderball 200 1646
+lc-thunderball 200 199501
+nl-euromillions 200 3504
+lc-euromillions 200 159638
+nl-set-for-life 200 1593
+lc-set-for-life 200 114070
