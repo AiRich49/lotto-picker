@@ -86,6 +86,14 @@
   .ball.combo { box-shadow: 0 0 0 3px #f6c9bd; }
   .combo-note { width: 100%; font-size: 13px; color: var(--muted); margin: 2px 0 0 64px; }
   @media (max-width: 520px) { .combo-note { margin-left: 0; } }
+  .badge-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin: -10px 0 18px; }
+  .badge-row .badge-text { flex: 1; min-width: 0; }
+  .badge-row { flex-wrap: nowrap !important; }
+  .badge18 { display: inline-grid; place-items: center; min-width: 34px; height: 24px; padding: 0 6px; border-radius: 6px; background: var(--ink); color: #fff; font-size: 12px; font-weight: 700; letter-spacing: .02em; }
+  .safe p { margin: 0 0 12px; font-size: 15px; }
+  .safe p:last-child { margin-bottom: 0; }
+  .safe a { color: var(--ink); font-weight: 700; }
+  .safe .small { font-size: 13px; color: var(--muted); }
   [hidden] { display: none !important; }
   @media (max-width: 520px) {
     .tabs button { font-size: 15px; padding: 9px 14px; }
@@ -101,6 +109,7 @@
 <main>
   <h1>Lotto Number Picker</h1>
   <p class="sub" id="sub"></p>
+  <p class="badge-row"><span class="badge18">18+</span><span class="badge-text">For adults only · Independent app, not affiliated with the National Lottery or Allwyn</span></p>
 
   <div class="tabs" role="tablist" id="tabs"></div>
   <p class="latest" id="latest"></p>
@@ -159,7 +168,13 @@
     <div id="combos"></div>
   </section>
 
-  <p class="note"><strong>A fair warning:</strong> every ball has the same chance in every draw, so sticking to the most-drawn numbers or combinations doesn't improve your odds. The differences in the counts are ordinary random variation. It's a fun way to choose, not a system. Please play responsibly.</p>
+  <section class="card safe">
+    <h2>Play safely</h2>
+    <p><span class="badge18">18+</span> <strong>For adults only.</strong> You must be 18 or over to play the National Lottery.</p>
+    <p><strong>A fair warning:</strong> every ball has the same chance in every draw, so sticking to the most-drawn numbers or combinations doesn't improve your odds. The differences in the counts are ordinary random variation. It's a fun way to choose, not a system. Only spend what you can afford.</p>
+    <p><strong>Need to talk?</strong> If gambling stops being fun, the free, confidential National Gambling Helpline is open 24 hours a day on <a href="tel:08088020133">0808 8020 133</a>, or chat online at <a href="https://www.gamcare.org.uk" target="_blank" rel="noopener">gamcare.org.uk</a>. More advice at <a href="https://www.begambleaware.org" target="_blank" rel="noopener">begambleaware.org</a>.</p>
+    <p class="small"><strong>Independent app.</strong> Lotto Number Picker is not affiliated with, endorsed by or connected to the National Lottery, Allwyn or any lottery operator. Lotto, Thunderball, EuroMillions and Set For Life are trademarks of their owners and are named only to describe the games. Results are collected from public sources and may occasionally be wrong or late; always check your ticket against the official results.</p>
+  </section>
   <p class="note" id="sourceNote"></p>
 </main>
 
