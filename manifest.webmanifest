@@ -1,6 +1,6 @@
 {
-  "name": "Lotto Number Picker",
-  "short_name": "Lotto Picker",
+  "name": "Lucky Ball Picker",
+  "short_name": "Lucky Ball Picker",
   "description": "Picks Lotto, Thunderball, EuroMillions and Set For Life numbers from the most-drawn numbers.",
   "start_url": "./",
   "scope": "./",

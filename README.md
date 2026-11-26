@@ -1,4 +1,4 @@
-# Lotto Number Picker
+# Lucky Ball Picker
 
 A free web app that picks UK Lotto, Thunderball, EuroMillions and Set For Life numbers from the most-drawn numbers.
 

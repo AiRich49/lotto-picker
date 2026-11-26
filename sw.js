@@ -1,6 +1,6 @@
 // App shell is cached for offline use; draw data is fetched fresh when online,
 // falling back to the last saved copy when offline.
-const CACHE = "lotto-picker-v5";
+const CACHE = "lotto-picker-v6";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png",
   "data/lotto.csv", "data/thunderball.csv", "data/euromillions.csv", "data/setforlife.csv"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
