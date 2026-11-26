@@ -103,6 +103,10 @@
     .cell b { font-size: 12px; } .cell span { font-size: 9px; }
     .summary { grid-template-columns: 1fr; }
   }
+  .share-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .share-row .go { width: auto; padding: 12px 24px; font-size: 16px; }
+  .share-link { font-weight: 700; color: var(--ink); text-decoration: none; word-break: break-all; }
+  .share-msg { font-size: 14px; color: var(--muted); min-height: 1.2em; margin: 8px 0 0; }
 </style>
 </head>
 <body>
@@ -166,6 +170,16 @@
   <section class="card">
     <h2>Most common combinations</h2>
     <div id="combos"></div>
+  </section>
+
+  <section class="card">
+    <h2>Share this app</h2>
+    <p>Know someone who'd like it? Send them the link.</p>
+    <div class="share-row">
+      <button class="go" id="share">Share this app</button>
+      <a class="share-link" href="https://bit.ly/LuckyBallPicker" target="_blank" rel="noopener">bit.ly/LuckyBallPicker</a>
+    </div>
+    <p class="share-msg" id="shareMsg" aria-live="polite"></p>
   </section>
 
   <section class="card safe">
@@ -416,6 +430,16 @@
   });
   $("mainPool").onchange = render; $("extraPool").onchange = render; $("comboMode").onchange = renderCombos;
   $("go").onclick = generate;
+  const SHARE_URL = "https://bit.ly/LuckyBallPicker";
+  $("share").onclick = async () => {
+    const data = { title: "Lotto Number Picker", text: "Pick your numbers from the most-drawn balls in Lotto, Thunderball, EuroMillions and Set For Life (18+).", url: SHARE_URL };
+    if (navigator.share) {
+      try { await navigator.share(data); $("shareMsg").textContent = ""; return; }
+      catch (e) { if (e && e.name === "AbortError") return; }
+    }
+    try { await navigator.clipboard.writeText(SHARE_URL); $("shareMsg").textContent = "Link copied. Paste it into a message to share."; }
+    catch (e) { $("shareMsg").textContent = "Copy this link to share: " + SHARE_URL; }
+  };
   $("copy").onclick = async () => {
     const g = GAMES[game];
     const text = g.name + "\n" + lastLines.map((l, i) => `Line ${i + 1}: ${l.main.join(", ")}` + (l.combo ? ` (includes ${l.combo.nums.join(" + ")})` : "") + (l.extra.length ? `  ${g.extra.name}: ${l.extra.join(", ")}` : "")).join("\n");
